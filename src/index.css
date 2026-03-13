@@ -1,0 +1,109 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  
+  --color-terminal-green: #00ff41;
+  --color-terminal-cyan: #00f2ff;
+  --color-terminal-fuchsia: #ff00ff;
+  
+  --breakpoint-xs: 480px;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    cursor: crosshair;
+  }
+  
+  body {
+    @apply antialiased selection:bg-white selection:text-black transition-colors duration-500;
+  }
+
+  body.dark {
+    @apply bg-[#050505] text-white;
+  }
+
+  body.light {
+    @apply bg-[#f5f5f7] text-[#1d1d1f];
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply backdrop-blur-xl border border-white/10 bg-white/5;
+  }
+  
+  .terminal-border {
+    @apply border border-white/10 relative;
+  }
+  
+  .terminal-border::before {
+    content: '';
+    @apply absolute -top-[1px] -left-[1px] w-2 h-2 border-t-2 border-l-2 border-current opacity-50;
+  }
+  
+  .terminal-border::after {
+    content: '';
+    @apply absolute -bottom-[1px] -right-[1px] w-2 h-2 border-b-2 border-r-2 border-current opacity-50;
+  }
+
+  .neo-shadow {
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  }
+
+  .scanline {
+    width: 100%;
+    height: 100px;
+    z-index: 99;
+    background: linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0) 0%,
+      rgba(255, 255, 255, 0.02) 50%,
+      rgba(0, 0, 0, 0) 100%
+    );
+    opacity: 0.1;
+    position: absolute;
+    bottom: 100%;
+    animation: scanline 10s linear infinite;
+  }
+}
+
+@keyframes scanline {
+  0% { bottom: 100%; }
+  100% { bottom: -100%; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.3; filter: blur(20px); }
+  50% { opacity: 0.6; filter: blur(40px); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 4s ease-in-out infinite;
+}
+
+.isometric-3d {
+  transform: rotateX(45deg) rotateZ(-45deg);
+  transform-style: preserve-3d;
+}
+
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors;
+}
