@@ -107,3 +107,32 @@
 ::-webkit-scrollbar-thumb {
   @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors;
 }
+
+.neon-border {
+  position: relative;
+  border-radius: 1rem; /* match parent */
+}
+
+.neon-border::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  background: conic-gradient(from 180deg at 50% 50%, var(--color-terminal-fuchsia) 0deg, var(--color-terminal-cyan) 180deg, var(--color-terminal-fuchsia) 360deg);
+  border-radius: inherit; /* match parent */
+  z-index: -1;
+  filter: blur(10px);
+  opacity: 0.6;
+}
+
+.bg-animated-gradient {
+  background: radial-gradient(ellipse 80% 50% at 50% 120%, rgba(0, 242, 255, 0.1), transparent),
+              radial-gradient(ellipse 80% 50% at 50% -20%, rgba(255, 0, 255, 0.1), transparent);
+  background-size: 200% 200%;
+  animation: bg-pan 15s ease-in-out infinite;
+}
+
+@keyframes bg-pan {
+  0% { background-position: 50% 0%; }
+  50% { background-position: 50% 100%; }
+  100% { background-position: 50% 0%; }
+}

@@ -31,6 +31,7 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
   const [feedback, setFeedback] = useState<{ index: number, type: 'success' | 'error' } | null>(null);
   const [isNewHighScore, setIsNewHighScore] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [goToNextLevel, setGoToNextLevel] = useState(false);
 
   const timerRef = useRef<number | null>(null);
   const sequenceTimer = useRef<number>(0);
@@ -60,6 +61,17 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
   }, [gridSize]);
 
   useEffect(() => {
+    if (goToNextLevel) {
+      setGoToNextLevel(false); // Reset trigger
+      clearTimers();
+      timerRef.current = setTimeout(() => {
+        startLevel(level);
+      }, 1200);
+    }
+    return clearTimers;
+  }, [goToNextLevel, level, startLevel]);
+
+  useEffect(() => {
     if (gameState === 'showing' && !isPaused) {
       const flashDuration = Math.max(200, initialSpeed - level * 40);
       const showNextInSequence = (index: number) => {
@@ -69,7 +81,7 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
           return;
         }
         
-        playClick();
+        playClick(sequence[index]);
         const newGrid = new Array(gridSize * gridSize).fill(false);
         newGrid[sequence[index]] = true;
         setGrid(newGrid);
@@ -94,7 +106,7 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
     
     const expected = sequence[userSequence.length];
     if (index === expected) {
-      playClick();
+      playClick(index);
       setFeedback({ index, type: 'success' });
       const newUserSequence = [...userSequence, index];
       setUserSequence(newUserSequence);
@@ -108,8 +120,7 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
           updateHighScore(newScore);
         }
         setLevel(l => l + 1);
-        clearTimers();
-        timerRef.current = setTimeout(() => startLevel(level + 1), 1200);
+        setGoToNextLevel(true);
       }
     } else {
       playError();
@@ -121,6 +132,10 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
   const handleStart = () => {
     initAudio();
     playStart();
+    setGoToNextLevel(false);
+    setLevel(1);
+    setScore(0);
+    setIsNewHighScore(false);
     startLevel(1);
   };
   
@@ -167,11 +182,11 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
               animate={isError ? { x: [-2, 2, -2, 2, 0] } : {}}
               onClick={() => handleTileClick(i)}
               className={`
-                aspect-square rounded-lg border-2 transition-all duration-200
-                ${active || isSuccess ? 'bg-terminal-cyan border-white shadow-[0_0_20px_rgba(0,242,255,0.8)]' : 
-                  isError ? 'bg-terminal-fuchsia border-white shadow-[0_0_20px_rgba(255,0,255,0.8)]' : 
-                  'bg-white/5 border-white/10'}
-                ${(gameState === 'playing' && !isPaused) ? 'hover:border-white/30 cursor-pointer' : 'cursor-default'}
+                aspect-square rounded-lg border-2 transition-all duration-200 shadow-inner
+                ${active || isSuccess ? 'bg-terminal-cyan/90 border-white shadow-[0_0_25px_rgba(0,242,255,0.9)]' : 
+                  isError ? 'bg-terminal-fuchsia/90 border-white shadow-[0_0_25px_rgba(255,0,255,0.9)]' : 
+                  'bg-slate-900/50 border-slate-800 shadow-slate-900/50'}
+                ${(gameState === 'playing' && !isPaused) ? 'hover:border-white/50 cursor-pointer' : 'cursor-default'}
               `}
             />
           );
@@ -188,7 +203,7 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
               <Brain size={48} className="text-terminal-cyan mb-4 animate-pulse" />
               <button
                 onClick={handleStart}
-                className="px-8 py-3 bg-terminal-cyan text-black font-black uppercase tracking-widest rounded-full hover:scale-105 transition-transform"
+                className="px-8 py-3 bg-terminal-cyan text-black font-black uppercase tracking-widest rounded-full hover:scale-105 transition-transform shadow-[0_0_20px_rgba(0,242,255,0.5)] hover:shadow-[0_0_30px_rgba(0,242,255,0.8)]"
               >
                 Start Test
               </button>
@@ -216,7 +231,7 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
               )}
               <button
                 onClick={onExit}
-                className="flex items-center gap-2 px-8 py-3 bg-white text-black font-black uppercase tracking-widest rounded-full hover:scale-105 transition-transform"
+                className="flex items-center gap-2 px-8 py-3 bg-white text-black font-black uppercase tracking-widest rounded-full hover:scale-105 transition-transform shadow-[0_0_20px_rgba(255,255,255,0.5)] hover:shadow-[0_0_30px_rgba(255,255,255,0.8)]"
               >
                 <RotateCcw size={20} /> New Game
               </button>
@@ -234,13 +249,13 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
               <div className="flex flex-col gap-4">
                 <button
                   onClick={togglePause}
-                  className="flex items-center gap-2 px-8 py-3 bg-terminal-cyan text-black font-black uppercase tracking-widest rounded-full hover:scale-105 transition-transform"
+                  className="flex items-center gap-2 px-8 py-3 bg-terminal-cyan text-black font-black uppercase tracking-widest rounded-full hover:scale-105 transition-transform shadow-[0_0_20px_rgba(0,242,255,0.5)] hover:shadow-[0_0_30px_rgba(0,242,255,0.8)]"
                 >
                   <Play size={20} /> Resume
                 </button>
                 <button
                   onClick={onExit}
-                  className="flex items-center gap-2 px-8 py-3 bg-white/20 text-white font-black uppercase tracking-widest rounded-full hover:scale-105 transition-transform"
+                  className="flex items-center gap-2 px-8 py-3 bg-white/20 text-white font-black uppercase tracking-widest rounded-full hover:scale-105 transition-transform hover:bg-white/30"
                 >
                   <RotateCcw size={20} /> New Game
                 </button>
@@ -280,10 +295,10 @@ const DifficultySelector: React.FC<{ onSelect: (diff: Difficulty) => void }> = (
           <button
             key={diff}
             onClick={() => handleSelect(diff)}
-            className="group px-6 py-3 bg-white/10 text-white font-bold uppercase tracking-widest rounded-full hover:bg-terminal-cyan hover:text-black transition-all flex justify-between items-center"
+            className="group px-6 py-3 bg-slate-800/50 text-white font-bold uppercase tracking-widest rounded-full hover:bg-terminal-cyan hover:text-black transition-all flex justify-between items-center border-2 border-slate-800 hover:border-terminal-cyan hover:shadow-[0_0_20px_rgba(0,242,255,0.5)]"
           >
             <span>{DIFFICULTY_LEVELS[diff].name}</span>
-            <span className="text-xs opacity-50 font-mono group-hover:text-black">
+            <span className="text-xs opacity-50 font-mono group-hover:text-black/80">
               HS: {useHighScore(diff).highScore}
             </span>
           </button>
@@ -297,9 +312,8 @@ export default function App() {
   const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white flex items-center justify-center">
-      <div className="w-full max-w-md border border-white/10 bg-black/40 rounded-2xl overflow-hidden shadow-2xl relative">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(0,242,255,0.03)_0%,transparent_70%)] pointer-events-none" />
+    <div className="min-h-screen bg-[#050505] text-white flex items-center justify-center bg-animated-gradient">
+      <div className="w-full max-w-md bg-black/40 rounded-2xl overflow-hidden shadow-2xl relative neon-border">
         {!difficulty ? (
           <DifficultySelector onSelect={setDifficulty} />
         ) : (

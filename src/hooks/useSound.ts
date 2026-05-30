@@ -37,8 +37,9 @@ export const useSound = () => {
     osc.stop(audioContext.current.currentTime + duration);
   }, []);
 
-  const playClick = useCallback(() => {
-    playTone(880, 0.08, 'triangle', 0.04);
+  const playClick = useCallback((index?: number) => {
+    const freq = (index !== undefined && index % 2 === 0) ? 880 : 987.77;
+    playTone(freq, 0.08, 'triangle', 0.04);
   }, [playTone]);
 
   const playSuccess = useCallback(() => {
