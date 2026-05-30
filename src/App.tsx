@@ -42,6 +42,7 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
   };
 
   const startLevel = useCallback((lvl: number) => {
+    setGoToNextLevel(false); // Reset the trigger for the next level
     clearTimers();
     setGameState('showing');
     setUserSequence([]);
@@ -58,17 +59,14 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
     
     setSequence(newSequence);
     sequenceTimer.current = 0;
-  }, [gridSize]);
+  }, [gridSize, setGoToNextLevel]);
 
   useEffect(() => {
     if (goToNextLevel) {
-      setGoToNextLevel(false); // Reset trigger
-      clearTimers();
       timerRef.current = setTimeout(() => {
         startLevel(level);
       }, 1200);
     }
-    return clearTimers;
   }, [goToNextLevel, level, startLevel]);
 
   useEffect(() => {
