@@ -65,11 +65,21 @@
       rgba(255, 255, 255, 0.02) 50%,
       rgba(0, 0, 0, 0) 100%
     );
-    opacity: 0.1;
+    opacity: 0.2;
     position: absolute;
     bottom: 100%;
     animation: scanline 10s linear infinite;
   }
+}
+
+@keyframes flicker {
+  0% { opacity: 0.95; }
+  50% { opacity: 1; }
+  100% { opacity: 0.98; }
+}
+
+.crt-flicker {
+  animation: flicker 0.15s infinite;
 }
 
 @keyframes scanline {

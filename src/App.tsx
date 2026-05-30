@@ -1,13 +1,15 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Brain, RotateCcw, Pause, Play } from 'lucide-react';
+import { Brain, RotateCcw, Pause, Play, Zap, Clock } from 'lucide-react';
 import { useSound } from './hooks/useSound';
 import { useHighScore } from './hooks/useHighScore';
+import { Starfield } from './components/Starfield';
+import { CRTOverlay } from './components/CRTOverlay';
 
 const DIFFICULTY_LEVELS = {
   easy: { gridSize: 3, speed: 1000, name: 'Easy' },
   medium: { gridSize: 4, speed: 800, name: 'Medium' },
-  hard: { gridSize: 5, speed: 650, name: 'Hard' },
+  hard: { gridSize: 5, speed: 650, name: 'Hard', timeLimit: 2 },
 };
 
 type Difficulty = keyof typeof DIFFICULTY_LEVELS;
@@ -18,7 +20,7 @@ interface MemoryMatrixProps {
 }
 
 export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }) => {
-  const { gridSize, speed: initialSpeed } = DIFFICULTY_LEVELS[difficulty];
+  const { gridSize, speed: initialSpeed, timeLimit } = DIFFICULTY_LEVELS[difficulty];
   const { playClick, playSuccess, playError, initAudio, playStart } = useSound();
   const { highScore, updateHighScore } = useHighScore(difficulty);
   
@@ -28,6 +30,8 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
   const [gameState, setGameState] = useState<'idle' | 'showing' | 'playing' | 'gameOver'>('idle');
   const [level, setLevel] = useState(1);
   const [score, setScore] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(timeLimit || 0);
   const [feedback, setFeedback] = useState<{ index: number, type: 'success' | 'error' } | null>(null);
   const [isNewHighScore, setIsNewHighScore] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -41,12 +45,23 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
     timerRef.current = null;
   };
 
+  useEffect(() => {
+    if (gameState === 'playing' && difficulty === 'hard' && timeLeft > 0 && !isPaused) {
+      const timer = setInterval(() => setTimeLeft(t => t - 1), 1000);
+      return () => clearInterval(timer);
+    } else if (timeLeft === 0 && gameState === 'playing' && difficulty === 'hard') {
+      playError();
+      setGameState('gameOver');
+    }
+  }, [timeLeft, gameState, difficulty, isPaused, playError]);
+
   const startLevel = useCallback((lvl: number) => {
-    setGoToNextLevel(false); // Reset the trigger for the next level
+    setGoToNextLevel(false);
     clearTimers();
     setGameState('showing');
     setUserSequence([]);
     setFeedback(null);
+    setTimeLeft(timeLimit || 0);
     const newSequence: number[] = [];
     const count = lvl + 2;
     
@@ -59,7 +74,7 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
     
     setSequence(newSequence);
     sequenceTimer.current = 0;
-  }, [gridSize, setGoToNextLevel]);
+  }, [gridSize, setGoToNextLevel, timeLimit]);
 
   useEffect(() => {
     if (goToNextLevel) {
@@ -76,6 +91,7 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
         if (index >= sequence.length) {
           setGrid(new Array(gridSize * gridSize).fill(false));
           setGameState('playing');
+          setTimeLeft(timeLimit || 0);
           return;
         }
         
@@ -97,7 +113,7 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
     }
     
     return clearTimers;
-  }, [gameState, isPaused, sequence, level, initialSpeed, gridSize, playClick]);
+  }, [gameState, isPaused, sequence, level, initialSpeed, gridSize, playClick, timeLimit]);
 
   const handleTileClick = (index: number) => {
     if (gameState !== 'playing' || isPaused) return;
@@ -108,11 +124,14 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
       setFeedback({ index, type: 'success' });
       const newUserSequence = [...userSequence, index];
       setUserSequence(newUserSequence);
+      setTimeLeft(timeLimit || 0);
       
       if (newUserSequence.length === sequence.length) {
         playSuccess();
-        const newScore = score + level * 10 * (Object.keys(DIFFICULTY_LEVELS).indexOf(difficulty) + 1);
+        const streakBonus = Math.floor(streak / 3) * 50;
+        const newScore = score + level * 10 * (Object.keys(DIFFICULTY_LEVELS).indexOf(difficulty) + 1) + streakBonus;
         setScore(newScore);
+        setStreak(s => s + 1);
         if (newScore > highScore) {
           setIsNewHighScore(true);
           updateHighScore(newScore);
@@ -124,6 +143,7 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
       playError();
       setFeedback({ index, type: 'error' });
       setGameState('gameOver');
+      setStreak(0);
     }
   };
 
@@ -133,6 +153,7 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
     setGoToNextLevel(false);
     setLevel(1);
     setScore(0);
+    setStreak(0);
     setIsNewHighScore(false);
     startLevel(1);
   };
@@ -143,8 +164,9 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center w-full h-full p-4 md:p-8">
-      <div className="grid grid-cols-3 items-center w-full max-w-[400px] mb-6 relative">
+    <div className="flex flex-col items-center justify-center w-full h-full p-4 md:p-8 relative">
+      <CRTOverlay />
+      <div className="grid grid-cols-3 items-center w-full max-w-[400px] mb-6 relative z-10">
         <div className="flex flex-col">
           <span className="text-[10px] uppercase tracking-widest opacity-40 font-bold">Level</span>
           <span className="text-2xl font-black text-white">{level}</span>
@@ -154,8 +176,8 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
           <span className="text-2xl font-black text-white">{score}</span>
         </div>
         <div className="flex flex-col items-end">
-          <span className="text-[10px] uppercase tracking-widest opacity-40 font-bold">High Score</span>
-          <span className="text-2xl font-black text-white">{highScore}</span>
+          <span className="text-[10px] uppercase tracking-widest opacity-40 font-bold">Streak</span>
+          <span className="text-2xl font-black text-terminal-cyan">{streak}</span>
         </div>
         {(gameState === 'playing' || gameState === 'showing') && (
           <button onClick={togglePause} className="absolute -right-12 top-1/2 -translate-y-1/2 text-white/50 hover:text-white">
@@ -165,9 +187,14 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
       </div>
 
       <div 
-        className="relative aspect-square w-full max-w-[400px] grid gap-2"
+        className="relative aspect-square w-full max-w-[400px] grid gap-2 z-10"
         style={{ gridTemplateColumns: `repeat(${gridSize}, 1fr)` }}
       >
+        {difficulty === 'hard' && gameState === 'playing' && (
+          <div className="absolute -top-12 left-0 right-0 flex justify-center items-center gap-2 text-terminal-fuchsia font-mono font-bold animate-pulse">
+            <Clock size={20} /> {timeLeft}s
+          </div>
+        )}
         {grid.map((active, i) => {
           const isSuccess = feedback?.index === i && feedback?.type === 'success';
           const isError = feedback?.index === i && feedback?.type === 'error';
@@ -196,7 +223,7 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm rounded-xl"
+              className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm rounded-xl z-20"
             >
               <Brain size={48} className="text-terminal-cyan mb-4 animate-pulse" />
               <button
@@ -213,7 +240,7 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md rounded-xl text-center"
+              className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md rounded-xl text-center z-20"
             >
               {isNewHighScore ? (
                 <>
@@ -241,7 +268,7 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md rounded-xl z-10"
+              className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md rounded-xl z-20"
             >
               <h3 className="text-3xl font-black text-white mb-6">PAUSED</h3>
               <div className="flex flex-col gap-4">
@@ -263,7 +290,7 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
         </AnimatePresence>
       </div>
 
-      <div className="mt-8 text-center">
+      <div className="mt-8 text-center relative z-10">
         <div className="text-[10px] font-bold uppercase tracking-widest opacity-40 max-w-[280px] mb-2">
           {isPaused ? 'Game is Paused' :
            gameState === 'showing' ? 'Observe the sequence...' : 
@@ -286,7 +313,7 @@ const DifficultySelector: React.FC<{ onSelect: (diff: Difficulty) => void }> = (
   }
 
   return (
-    <div className="flex flex-col items-center justify-center p-8">
+    <div className="flex flex-col items-center justify-center p-8 relative z-10">
       <h2 className="text-2xl font-black text-white mb-6">Select Difficulty</h2>
       <div className="flex flex-col gap-4 w-full max-w-[220px]">
         {(Object.keys(DIFFICULTY_LEVELS) as Difficulty[]).map(diff => (
@@ -311,6 +338,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <Starfield />
       <div className="w-full max-w-md bg-black/40 rounded-2xl overflow-hidden shadow-2xl relative neon-border">
         {!difficulty ? (
           <DifficultySelector onSelect={setDifficulty} />
