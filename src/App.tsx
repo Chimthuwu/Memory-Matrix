@@ -331,7 +331,7 @@ const DifficultySelector: React.FC<{ onSelect: (diff: Difficulty) => void }> = (
           >
             <span>{DIFFICULTY_LEVELS[diff].name}</span>
             <span className="text-xs opacity-50 font-mono group-hover:text-black/80">
-              HS: {useHighScore(diff).highScore}
+              HS: {useHighScore(diff as any).highScore}
             </span>
           </button>
         ))}
