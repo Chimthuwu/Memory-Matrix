@@ -231,8 +231,9 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, mode, on
               onClick={() => handleTileClick(i)}
               className={`
                 aspect-square rounded-lg border-2 transition-all duration-200 shadow-inner
-                ${active || isSuccess ? 'bg-terminal-cyan/90 border-white shadow-[0_0_25px_rgba(0,242,255,0.9)]' : 
-                  isError ? 'bg-terminal-fuchsia/90 border-white shadow-[0_0_25px_rgba(255,0,255,0.9)]' : 
+                ${active || isSuccess ? 
+                  (mode === 'endless' ? 'bg-terminal-fuchsia/90 border-white shadow-[0_0_25px_rgba(255,0,255,0.9)]' : 'bg-terminal-cyan/90 border-white shadow-[0_0_25px_rgba(0,242,255,0.9)]') : 
+                  isError ? 'bg-orange-500/90 border-white shadow-[0_0_25px_rgba(249,115,22,0.9)]' : 
                   'bg-slate-900/50 border-slate-800 shadow-slate-900/50'}
                 ${(gameState === 'playing' && !isPaused) ? 'hover:border-white/50 cursor-pointer' : 'cursor-default'}
               `}
