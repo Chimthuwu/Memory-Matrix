@@ -1,12 +1,19 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Brain, RotateCcw, Pause, Play, Zap, Clock } from 'lucide-react';
+import { Brain, RotateCcw, Pause, Play, Clock } from 'lucide-react';
 import { useSound } from './hooks/useSound';
 import { useHighScore } from './hooks/useHighScore';
 import { Starfield } from './components/Starfield';
 import { CRTOverlay } from './components/CRTOverlay';
 
-const DIFFICULTY_LEVELS = {
+interface DifficultyLevel {
+  gridSize: number;
+  speed: number;
+  name: string;
+  timeLimit?: number;
+}
+
+const DIFFICULTY_LEVELS: Record<string, DifficultyLevel> = {
   easy: { gridSize: 3, speed: 1000, name: 'Easy' },
   medium: { gridSize: 4, speed: 800, name: 'Medium' },
   hard: { gridSize: 5, speed: 650, name: 'Hard', timeLimit: 2 },
@@ -47,7 +54,7 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
 
   useEffect(() => {
     if (gameState === 'playing' && difficulty === 'hard' && timeLeft > 0 && !isPaused) {
-      const timer = setInterval(() => setTimeLeft(t => t - 1), 1000);
+      const timer = setInterval(() => setTimeLeft((t: number) => t - 1), 1000);
       return () => clearInterval(timer);
     } else if (timeLeft === 0 && gameState === 'playing' && difficulty === 'hard') {
       playError();

@@ -1,5 +1,3 @@
-import React from 'react';
-
 export const Starfield = () => {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10 bg-black">

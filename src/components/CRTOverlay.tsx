@@ -1,5 +1,3 @@
-import React from 'react';
-
 export const CRTOverlay = () => {
   return (
     <div className="absolute inset-0 pointer-events-none z-50 crt-flicker overflow-hidden rounded-2xl">
