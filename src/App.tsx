@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Brain, RotateCcw, Pause, Play, Clock } from 'lucide-react';
+import { Brain, RotateCcw, Pause, Play } from 'lucide-react';
 import { useSound } from './hooks/useSound';
 import { useHighScore } from './hooks/useHighScore';
 import { Starfield } from './components/Starfield';
@@ -16,7 +16,7 @@ interface DifficultyLevel {
 const DIFFICULTY_LEVELS: Record<string, DifficultyLevel> = {
   easy: { gridSize: 3, speed: 1000, name: 'Easy' },
   medium: { gridSize: 4, speed: 800, name: 'Medium' },
-  hard: { gridSize: 5, speed: 650, name: 'Hard', timeLimit: 2 },
+  hard: { gridSize: 5, speed: 650, name: 'Hard' },
 };
 type Difficulty = keyof typeof DIFFICULTY_LEVELS;
 type GameMode = 'classic' | 'endless';
@@ -213,11 +213,6 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, mode, on
         className="relative aspect-square w-full max-w-[400px] grid gap-2 z-10"
         style={{ gridTemplateColumns: `repeat(${gridSize}, 1fr)` }}
       >
-        {difficulty === 'hard' && gameState === 'playing' && (
-          <div className="absolute -top-12 left-0 right-0 flex justify-center items-center gap-2 text-terminal-fuchsia font-mono font-bold animate-pulse">
-            <Clock size={20} /> {timeLeft}s
-          </div>
-        )}
         {grid.map((active, i) => {
           const isSuccess = feedback?.index === i && feedback?.type === 'success';
           const isError = feedback?.index === i && feedback?.type === 'error';
