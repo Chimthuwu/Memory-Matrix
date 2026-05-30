@@ -29,7 +29,7 @@ interface MemoryMatrixProps {
 export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }) => {
   const { gridSize, speed: initialSpeed, timeLimit } = DIFFICULTY_LEVELS[difficulty];
   const { playClick, playSuccess, playError, initAudio, playStart } = useSound();
-  const { highScore, updateHighScore } = useHighScore(difficulty);
+  const { highScore, updateHighScore } = useHighScore(difficulty as any);
   
   const [grid, setGrid] = useState<boolean[]>(new Array(gridSize * gridSize).fill(false));
   const [sequence, setSequence] = useState<number[]>([]);
