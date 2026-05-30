@@ -310,7 +310,7 @@ export default function App() {
   const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white flex items-center justify-center bg-animated-gradient">
+    <div className="min-h-screen bg-black text-white flex items-center justify-center">
       <div className="w-full max-w-md bg-black/40 rounded-2xl overflow-hidden shadow-2xl relative neon-border">
         {!difficulty ? (
           <DifficultySelector onSelect={setDifficulty} />

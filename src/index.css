@@ -24,7 +24,7 @@
   }
 
   body.dark {
-    @apply bg-[#050505] text-white;
+    @apply bg-black text-white;
   }
 
   body.light {
