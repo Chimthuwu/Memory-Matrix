@@ -19,7 +19,7 @@ interface MemoryMatrixProps {
 
 export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }) => {
   const { gridSize, speed: initialSpeed } = DIFFICULTY_LEVELS[difficulty];
-  const { playClick, playSuccess, playError, initAudio } = useSound();
+  const { playClick, playSuccess, playError, initAudio, playStart } = useSound();
   const { highScore, updateHighScore } = useHighScore(difficulty);
   
   const [grid, setGrid] = useState<boolean[]>(new Array(gridSize * gridSize).fill(false));
@@ -120,6 +120,7 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
 
   const handleStart = () => {
     initAudio();
+    playStart();
     startLevel(1);
   };
   
@@ -263,6 +264,14 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
 };
 
 const DifficultySelector: React.FC<{ onSelect: (diff: Difficulty) => void }> = ({ onSelect }) => {
+  const { initAudio, playStart } = useSound();
+
+  const handleSelect = (diff: Difficulty) => {
+    initAudio();
+    playStart();
+    onSelect(diff);
+  }
+
   return (
     <div className="flex flex-col items-center justify-center p-8">
       <h2 className="text-2xl font-black text-white mb-6">Select Difficulty</h2>
@@ -270,7 +279,7 @@ const DifficultySelector: React.FC<{ onSelect: (diff: Difficulty) => void }> = (
         {(Object.keys(DIFFICULTY_LEVELS) as Difficulty[]).map(diff => (
           <button
             key={diff}
-            onClick={() => onSelect(diff)}
+            onClick={() => handleSelect(diff)}
             className="group px-6 py-3 bg-white/10 text-white font-bold uppercase tracking-widest rounded-full hover:bg-terminal-cyan hover:text-black transition-all flex justify-between items-center"
           >
             <span>{DIFFICULTY_LEVELS[diff].name}</span>
