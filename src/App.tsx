@@ -18,16 +18,19 @@ const DIFFICULTY_LEVELS: Record<string, DifficultyLevel> = {
   medium: { gridSize: 4, speed: 800, name: 'Medium' },
   hard: { gridSize: 5, speed: 650, name: 'Hard', timeLimit: 2 },
 };
-
 type Difficulty = keyof typeof DIFFICULTY_LEVELS;
+type GameMode = 'classic' | 'endless';
 
 interface MemoryMatrixProps {
   difficulty: Difficulty;
+  mode: GameMode;
   onExit: () => void;
 }
 
-export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }) => {
+export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, mode, onExit }) => {
   const { gridSize, speed: initialSpeed, timeLimit } = DIFFICULTY_LEVELS[difficulty];
+  // ... rest of the logic ...
+
   const { playClick, playSuccess, playError, initAudio, playStart } = useSound();
   const { highScore, updateHighScore } = useHighScore(difficulty as any);
   
@@ -62,17 +65,23 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
     }
   }, [timeLeft, gameState, difficulty, isPaused, playError]);
 
-  const startLevel = useCallback((lvl: number) => {
+  const startLevel = useCallback((lvl: number, currentSequence: number[] = []) => {
     setGoToNextLevel(false);
     clearTimers();
     setGameState('showing');
     setUserSequence([]);
     setFeedback(null);
     setTimeLeft(timeLimit || 0);
-    const newSequence: number[] = [];
-    const count = lvl + 2;
     
-    while (newSequence.length < count) {
+    let newSequence = [...currentSequence];
+    const count = mode === 'endless' ? 1 : (lvl + 2);
+    
+    // If classic, generate new sequence from scratch. If endless, add just 1 more to existing.
+    if (mode === 'classic') {
+       newSequence = [];
+    }
+
+    while (newSequence.length < (mode === 'endless' ? currentSequence.length + 1 : count)) {
       const rand = Math.floor(Math.random() * (gridSize * gridSize));
       if (!newSequence.includes(rand)) {
         newSequence.push(rand);
@@ -81,15 +90,19 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
     
     setSequence(newSequence);
     sequenceTimer.current = 0;
-  }, [gridSize, setGoToNextLevel, timeLimit]);
+  }, [gridSize, setGoToNextLevel, timeLimit, mode]);
 
   useEffect(() => {
     if (goToNextLevel) {
       timerRef.current = setTimeout(() => {
-        startLevel(level);
+        // Pass existing sequence for endless mode
+        startLevel(level, mode === 'endless' ? sequence : []);
       }, 1200);
     }
-  }, [goToNextLevel, level, startLevel]);
+  }, [goToNextLevel, level, startLevel, mode, sequence]);
+
+  // Update DifficultySelector to let user pick mode and pass mode to MemoryMatrix
+  // ... and update handleTileClick and UI color...
 
   useEffect(() => {
     if (gameState === 'showing' && !isPaused) {
@@ -180,12 +193,15 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
         </div>
         <div className="flex flex-col items-center">
           <span className="text-[10px] uppercase tracking-widest opacity-40 font-bold">Score</span>
-          <span className="text-2xl font-black text-white">{score}</span>
+          <span className={`text-2xl font-black ${mode === 'endless' ? 'text-terminal-fuchsia' : 'text-white'}`}>{score}</span>
         </div>
         <div className="flex flex-col items-end">
           <span className="text-[10px] uppercase tracking-widest opacity-40 font-bold">Streak</span>
-          <span className="text-2xl font-black text-terminal-cyan">{streak}</span>
+          <span className={`text-2xl font-black ${mode === 'endless' ? 'text-terminal-fuchsia' : 'text-terminal-cyan'}`}>{streak}</span>
         </div>
+        {mode === 'endless' && (
+           <span className="absolute -top-8 left-0 text-[10px] uppercase tracking-widest font-bold text-terminal-fuchsia">Endless Mode</span>
+        )}
         {(gameState === 'playing' || gameState === 'showing') && (
           <button onClick={togglePause} className="absolute -right-12 top-1/2 -translate-y-1/2 text-white/50 hover:text-white">
             {isPaused ? <Play size={20} /> : <Pause size={20} />}
@@ -310,13 +326,13 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, onExit }
   );
 };
 
-const DifficultySelector: React.FC<{ onSelect: (diff: Difficulty) => void }> = ({ onSelect }) => {
+const DifficultySelector: React.FC<{ onSelect: (diff: Difficulty, mode: GameMode) => void }> = ({ onSelect }) => {
   const { initAudio, playStart } = useSound();
 
-  const handleSelect = (diff: Difficulty) => {
+  const handleSelect = (diff: Difficulty, mode: GameMode) => {
     initAudio();
     playStart();
-    onSelect(diff);
+    onSelect(diff, mode);
   }
 
   return (
@@ -324,16 +340,20 @@ const DifficultySelector: React.FC<{ onSelect: (diff: Difficulty) => void }> = (
       <h2 className="text-2xl font-black text-white mb-6">Select Difficulty</h2>
       <div className="flex flex-col gap-4 w-full max-w-[220px]">
         {(Object.keys(DIFFICULTY_LEVELS) as Difficulty[]).map(diff => (
-          <button
-            key={diff}
-            onClick={() => handleSelect(diff)}
-            className="group px-6 py-3 bg-slate-800/50 text-white font-bold uppercase tracking-widest rounded-full hover:bg-terminal-cyan hover:text-black transition-all flex justify-between items-center border-2 border-slate-800 hover:border-terminal-cyan hover:shadow-[0_0_20px_rgba(0,242,255,0.5)]"
-          >
-            <span>{DIFFICULTY_LEVELS[diff].name}</span>
-            <span className="text-xs opacity-50 font-mono group-hover:text-black/80">
-              HS: {useHighScore(diff as any).highScore}
-            </span>
-          </button>
+          <div key={diff} className="flex flex-col gap-2">
+            <button
+              onClick={() => handleSelect(diff, 'classic')}
+              className="group px-6 py-3 bg-slate-800/50 text-white font-bold uppercase tracking-widest rounded-full hover:bg-terminal-cyan hover:text-black transition-all flex justify-between items-center border-2 border-slate-800 hover:border-terminal-cyan hover:shadow-[0_0_20px_rgba(0,242,255,0.5)]"
+            >
+              <span>{DIFFICULTY_LEVELS[diff].name}</span>
+            </button>
+            <button
+              onClick={() => handleSelect(diff, 'endless')}
+              className="group px-6 py-2 bg-slate-800/50 text-terminal-fuchsia font-bold uppercase tracking-widest rounded-full hover:bg-terminal-fuchsia hover:text-black transition-all flex justify-between items-center border-2 border-slate-800 hover:border-terminal-fuchsia hover:shadow-[0_0_20px_rgba(255,0,255,0.5)]"
+            >
+              <span>{DIFFICULTY_LEVELS[diff].name} Endless</span>
+            </button>
+          </div>
         ))}
       </div>
     </div>
@@ -342,15 +362,16 @@ const DifficultySelector: React.FC<{ onSelect: (diff: Difficulty) => void }> = (
 
 export default function App() {
   const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
+  const [mode, setMode] = useState<GameMode>('classic');
 
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center">
       <Starfield />
       <div className="w-full max-w-md bg-black/40 rounded-2xl overflow-hidden shadow-2xl relative neon-border">
         {!difficulty ? (
-          <DifficultySelector onSelect={setDifficulty} />
+          <DifficultySelector onSelect={(d, m) => { setDifficulty(d); setMode(m); }} />
         ) : (
-          <MemoryMatrix difficulty={difficulty} onExit={() => setDifficulty(null)} />
+          <MemoryMatrix difficulty={difficulty} mode={mode} onExit={() => setDifficulty(null)} />
         )}
       </div>
     </div>
