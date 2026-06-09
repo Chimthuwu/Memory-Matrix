@@ -16,7 +16,7 @@ interface DifficultyLevel {
 const DIFFICULTY_LEVELS: Record<string, DifficultyLevel> = {
   easy: { gridSize: 3, speed: 1000, name: 'Easy' },
   medium: { gridSize: 4, speed: 800, name: 'Medium' },
-  hard: { gridSize: 5, speed: 650, name: 'Hard' },
+  hard: { gridSize: 5, speed: 650, name: 'Hard', timeLimit: 10 },
 };
 type Difficulty = keyof typeof DIFFICULTY_LEVELS;
 type GameMode = 'classic' | 'endless';
@@ -81,7 +81,11 @@ export const MemoryMatrix: React.FC<MemoryMatrixProps> = ({ difficulty, mode, on
        newSequence = [];
     }
 
-    while (newSequence.length < (mode === 'endless' ? currentSequence.length + 1 : count)) {
+    const targetLength = mode === 'endless' 
+      ? (currentSequence.length === 0 ? 3 : currentSequence.length + 1) 
+      : count;
+
+    while (newSequence.length < targetLength) {
       const rand = Math.floor(Math.random() * (gridSize * gridSize));
       if (!newSequence.includes(rand)) {
         newSequence.push(rand);
